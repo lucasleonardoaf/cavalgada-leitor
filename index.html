@@ -2,194 +2,420 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Leitor de Códigos - Cavalgada</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Conferência - Cavalgada</title>
 
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f3f4f6;
-      margin: 0;
-      padding: 20px;
-      text-align: center;
-      color: #222;
-    }
-
-    .container {
-      max-width: 500px;
-      margin: 20px auto;
-      background: white;
-      padding: 20px;
-      border-radius: 12px;
-      box-shadow: 0 2px 10px #0002;
-    }
-
-    h1 {
-      font-size: 23px;
-      color: #245c38;
-    }
-
-    video {
-      width: 100%;
-      border-radius: 10px;
-      background: #111;
-      margin-top: 15px;
-    }
-
-    button {
-      width: 100%;
-      padding: 15px;
-      margin-top: 12px;
-      border: 0;
-      border-radius: 8px;
-      background: #245c38;
-      color: white;
-      font-size: 17px;
-      cursor: pointer;
-    }
-
-    button:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    #copiar {
-      background: #2563a6;
-    }
-
-    #resultado {
-      font-size: 24px;
-      font-weight: bold;
-      padding: 15px;
-      background: #e8f5e9;
-      border-radius: 8px;
-      margin-top: 15px;
-      overflow-wrap: anywhere;
-    }
-
-    #mensagem {
-      font-size: 14px;
-      margin-top: 15px;
-      color: #555;
-    }
-  </style>
+<style>
+body {
+  font-family: Arial, sans-serif;
+  background: #f3f4f6;
+  margin: 0;
+  padding: 20px;
+  color: #222;
+}
+.container {
+  max-width: 500px;
+  margin: 20px auto;
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px #0002;
+}
+h1 { color: #245c38; font-size: 23px; text-align: center; }
+p { text-align: center; }
+input, button {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 14px;
+  margin-top: 12px;
+  border-radius: 8px;
+  font-size: 16px;
+}
+input { border: 1px solid #bbb; }
+button {
+  border: 0;
+  background: #245c38;
+  color: white;
+  cursor: pointer;
+}
+button:disabled { opacity: .5; cursor: not-allowed; }
+.secondary { background: #2563a6; }
+.danger { background: #a83232; }
+video {
+  width: 100%;
+  margin-top: 15px;
+  border-radius: 10px;
+  background: #111;
+}
+#resultado {
+  margin-top: 15px;
+  padding: 15px;
+  background: #e8f5e9;
+  border-radius: 8px;
+  overflow-wrap: anywhere;
+}
+#mensagem {
+  font-size: 14px;
+  margin-top: 15px;
+  text-align: center;
+}
+.hidden { display: none; }
+.info { line-height: 1.7; }
+</style>
 </head>
 
 <body>
-  <div class="container">
-    <h1>Leitor de Códigos</h1>
-    <p>Cavalgada Amigos da Chácara Mucambo</p>
+<div class="container">
+  <h1>Conferência de Camisas</h1>
+  <p>Cavalgada Amigos da Chácara Mucambo</p>
 
-    <video id="video" autoplay muted playsinline></video>
+  <section id="login">
+    <h3>Identificação da equipe</h3>
+    <input id="atendente" placeholder="Nome do conferente">
+    <input id="senha" type="password" placeholder="Senha de acesso">
+    <button id="entrar">Entrar no sistema</button>
+  </section>
+
+  <section id="sistema" class="hidden">
+    <p id="identificacao"></p>
 
     <button id="iniciar">Abrir câmera</button>
-    <button id="parar" disabled>Parar câmera</button>
+    <button id="parar" class="danger" disabled>Parar câmera</button>
+    <video id="video" autoplay muted playsinline></video>
 
-    <h3>Código encontrado:</h3>
+    <h3>Código lido:</h3>
     <div id="resultado">Aguardando leitura...</div>
 
-    <button id="copiar" disabled>Copiar código</button>
-    <button id="novo" disabled>Ler outro código</button>
+    <button id="consultar" class="secondary" disabled>Consultar voucher</button>
+    <button id="novo" class="secondary">Ler outro código</button>
 
-    <p id="mensagem">
-      Aponte a câmera para o código de barras.
-    </p>
-  </div>
+    <div id="detalhes"></div>
+    <button id="confirmar" class="hidden">Confirmar retirada</button>
+    <button id="sair" class="danger">Sair</button>
+  </section>
 
-  <script type="module">
-    import {
-      BrowserMultiFormatReader
-    } from "https://esm.sh/@zxing/browser@0.1.5";
+  <p id="mensagem">Acesso restrito à equipe de conferência.</p>
+</div>
 
-    const leitor = new BrowserMultiFormatReader();
+<script type="module">
+import { BrowserMultiFormatReader } from
+"https://esm.sh/@zxing/browser@0.1.5";
 
-    const video = document.getElementById("video");
-    const iniciar = document.getElementById("iniciar");
-    const parar = document.getElementById("parar");
-    const copiar = document.getElementById("copiar");
-    const novo = document.getElementById("novo");
-    const resultado = document.getElementById("resultado");
-    const mensagem = document.getElementById("mensagem");
+const API_URL = "https://script.google.com/macros/s/AKfycbz7-R0gWw8nu8WNFM3yRZY97Qu2_BuBh1UfFt_IKA9sq_Z_3uoINGfWSwobwi-eC1xkyig/exec";
 
-    let controles = null;
-    let codigoLido = "";
+const leitor = new BrowserMultiFormatReader();
 
-    async function iniciarLeitura() {
-      try {
-        resultado.textContent = "Aguardando leitura...";
-        mensagem.textContent = "Solicitando acesso à câmera...";
-        iniciar.disabled = true;
-        parar.disabled = false;
-        copiar.disabled = true;
-        novo.disabled = true;
+const $ = id => document.getElementById(id);
 
-        controles = await leitor.decodeFromVideoDevice(
-          undefined,
-          video,
-          (result, error, controls) => {
-            if (result && !codigoLido) {
-              codigoLido = result.getText();
+let token = "";
+let nome = "";
+let codigoLido = "";
+let voucherAtual = null;
+let controles = null;
+let contador = 0;
 
-              resultado.textContent = codigoLido;
-              mensagem.textContent = "Código lido com sucesso!";
-              copiar.disabled = false;
-              novo.disabled = false;
+function mensagem(texto) {
+  $("mensagem").textContent = texto;
+}
 
-              controls.stop();
-              controles = null;
+// Comunicação com o Google Apps Script por JSONP
+function chamarAPI(params) {
+  return new Promise((resolve, reject) => {
+    const callback = "respostaAPI" + (++contador);
 
-              iniciar.disabled = false;
-              parar.disabled = true;
-            }
-          }
-        );
-
-        mensagem.textContent = "Câmera aberta. Aponte para o código.";
-
-      } catch (erro) {
-        mensagem.textContent =
-          "Não foi possível abrir a câmera: " + erro.message;
-
-        iniciar.disabled = false;
-        parar.disabled = true;
-      }
-    }
-
-    function pararLeitura() {
-      if (controles) {
-        controles.stop();
-        controles = null;
-      }
-
-      iniciar.disabled = false;
-      parar.disabled = true;
-      mensagem.textContent = "Câmera desligada.";
-    }
-
-    iniciar.addEventListener("click", iniciarLeitura);
-
-    parar.addEventListener("click", pararLeitura);
-
-    copiar.addEventListener("click", async () => {
-      if (!codigoLido) return;
-
-      try {
-        await navigator.clipboard.writeText(codigoLido);
-        mensagem.textContent = "Código copiado!";
-      } catch (erro) {
-        mensagem.textContent =
-          "Não foi possível copiar. Selecione o código manualmente.";
-      }
+    const script = document.createElement("script");
+    const dados = new URLSearchParams({
+      ...params,
+      api: "1",
+      callback
     });
 
-    novo.addEventListener("click", () => {
-      codigoLido = "";
-      resultado.textContent = "Aguardando leitura...";
-      copiar.disabled = true;
-      novo.disabled = true;
-      iniciarLeitura();
+    const temporizador = setTimeout(() => {
+      finalizar();
+      reject(new Error("Tempo esgotado. Verifique a conexão."));
+    }, 20000);
+
+    function finalizar() {
+      clearTimeout(temporizador);
+      delete window[callback];
+      script.remove();
+    }
+
+    window[callback] = resposta => {
+      finalizar();
+      resolve(resposta);
+    };
+
+    script.onerror = () => {
+      finalizar();
+      reject(new Error("Não foi possível conectar ao sistema."));
+    };
+
+    script.src = API_URL + "?" + dados.toString();
+    document.body.appendChild(script);
+  });
+}
+
+// Login
+$("entrar").addEventListener("click", async () => {
+  nome = $("atendente").value.trim();
+  const senha = $("senha").value;
+
+  if (!nome || !senha) {
+    mensagem("Informe seu nome e a senha.");
+    return;
+  }
+
+  $("entrar").disabled = true;
+  mensagem("Verificando acesso...");
+
+  try {
+    const resposta = await chamarAPI({
+      action: "login",
+      password: senha
     });
-  </script>
+
+    if (!resposta.success) {
+      throw new Error(resposta.message || "Falha no acesso.");
+    }
+
+    token = resposta.data.token;
+
+    $("login").classList.add("hidden");
+    $("sistema").classList.remove("hidden");
+    $("identificacao").textContent = "Conferente: " + nome;
+    $("senha").value = "";
+
+    mensagem("Acesso autorizado. Pronto para conferir.");
+  } catch (erro) {
+    mensagem(erro.message);
+  } finally {
+    $("entrar").disabled = false;
+  }
+});
+
+// Câmera
+async function iniciarLeitura() {
+  try {
+    $("iniciar").disabled = true;
+    $("parar").disabled = false;
+    mensagem("Abrindo câmera...");
+
+    controles = await leitor.decodeFromVideoDevice(
+      undefined,
+      $("video"),
+      (result, error, controls) => {
+        if (result && !codigoLido) {
+          codigoLido = result.getText().trim().toUpperCase();
+
+          $("resultado").textContent = codigoLido;
+          $("consultar").disabled = false;
+
+          controls.stop();
+          controles = null;
+
+          $("iniciar").disabled = false;
+          $("parar").disabled = true;
+
+          mensagem("Código lido! Consulte o voucher.");
+        }
+      }
+    );
+
+    mensagem("Câmera aberta. Aponte para o código de barras.");
+  } catch (erro) {
+    mensagem("Erro ao abrir câmera: " + erro.message);
+    $("iniciar").disabled = false;
+    $("parar").disabled = true;
+  }
+}
+
+function pararLeitura() {
+  if (controles) {
+    controles.stop();
+    controles = null;
+  }
+  $("iniciar").disabled = false;
+  $("parar").disabled = true;
+  mensagem("Câmera desligada.");
+}
+
+$("iniciar").addEventListener("click", iniciarLeitura);
+$("parar").addEventListener("click", pararLeitura);
+
+// Consulta
+$("consultar").addEventListener("click", async () => {
+  if (!codigoLido) return;
+
+  $("consultar").disabled = true;
+  $("detalhes").innerHTML = "";
+  $("confirmar").classList.add("hidden");
+  mensagem("Consultando voucher...");
+
+  try {
+    const resposta = await chamarAPI({
+      action: "search",
+      code: codigoLido,
+      token
+    });
+
+    if (!resposta.success) {
+      throw new Error(resposta.message || "Erro na consulta.");
+    }
+
+    const v = resposta.data;
+
+    if (!v.encontrado) {
+      voucherAtual = null;
+      $("detalhes").textContent = "Voucher não encontrado.";
+      mensagem("Código não cadastrado.");
+      return;
+    }
+
+    voucherAtual = v;
+
+    const campos = [
+      ["Voucher", v.voucher],
+      ["Comprador", v.comprador],
+      ["Telefone", v.telefone],
+      ["Tamanho", v.tamanho],
+      ["Valor", v.valor],
+      ["Pagamento", v.pagamento],
+      ["Retirada", v.retirada],
+      ["Status", v.status]
+    ];
+
+    const bloco = document.createElement("div");
+    bloco.className = "info";
+    bloco.id = "informacoes";
+
+    campos.forEach(([titulo, valor]) => {
+      const linha = document.createElement("p");
+      linha.style.textAlign = "left";
+      linha.textContent = titulo + ": " + (valor || "-");
+      bloco.appendChild(linha);
+    });
+
+    $("detalhes").appendChild(bloco);
+
+    const pago = String(v.pagamento || "").trim().toLowerCase()
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+    const quitado = [
+      "pago", "pago total", "total", "sim", "quitado", "integral"
+    ].includes(pago);
+
+    const retirado = String(v.retirada || "").trim().toLowerCase() === "sim";
+
+    if (retirado) {
+      mensagem("ATENÇÃO: este voucher já foi retirado.");
+    } else if (!quitado) {
+      mensagem("Pagamento não quitado. Não entregue a camisa.");
+    } else {
+      $("confirmar").classList.remove("hidden");
+      mensagem("Pagamento confirmado. Pode registrar a retirada.");
+    }
+
+  } catch (erro) {
+    mensagem(erro.message);
+  } finally {
+    $("consultar").disabled = false;
+  }
+});
+
+// Confirmação da retirada
+$("confirmar").addEventListener("click", async () => {
+  if (!voucherAtual) return;
+
+  $("confirmar").disabled = true;
+  mensagem("Registrando retirada...");
+
+  try {
+    const resposta = await chamarAPI({
+      action: "confirm",
+      row: voucherAtual.row,
+      attendant: nome,
+      token,
+      code: codigoLido
+    });
+
+    if (!resposta.success) {
+      throw new Error(resposta.message || "Não foi possível confirmar.");
+    }
+
+    mensagem(resposta.data.mensagem || "Retirada confirmada!");
+    $("confirmar").classList.add("hidden");
+
+    await consultarNovamente();
+
+  } catch (erro) {
+    mensagem(erro.message);
+  } finally {
+    $("confirmar").disabled = false;
+  }
+});
+
+async function consultarNovamente() {
+  const resposta = await chamarAPI({
+    action: "search",
+    code: codigoLido,
+    token
+  });
+
+  if (resposta.success && resposta.data.encontrado) {
+    const v = resposta.data;
+    $("detalhes").innerHTML = "";
+    const bloco = document.createElement("div");
+    bloco.className = "info";
+
+    [
+      ["Voucher", v.voucher],
+      ["Comprador", v.comprador],
+      ["Tamanho", v.tamanho],
+      ["Pagamento", v.pagamento],
+      ["Retirada", v.retirada]
+    ].forEach(([titulo, valor]) => {
+      const linha = document.createElement("p");
+      linha.style.textAlign = "left";
+      linha.textContent = titulo + ": " + (valor || "-");
+      bloco.appendChild(linha);
+    });
+
+    $("detalhes").appendChild(bloco);
+  }
+}
+
+// Novo código
+$("novo").addEventListener("click", () => {
+  pararLeitura();
+  codigoLido = "";
+  voucherAtual = null;
+
+  $("resultado").textContent = "Aguardando leitura...";
+  $("detalhes").innerHTML = "";
+  $("consultar").disabled = true;
+  $("confirmar").classList.add("hidden");
+
+  iniciarLeitura();
+});
+
+// Sair
+$("sair").addEventListener("click", () => {
+  pararLeitura();
+  token = "";
+  nome = "";
+  codigoLido = "";
+  voucherAtual = null;
+
+  $("sistema").classList.add("hidden");
+  $("login").classList.remove("hidden");
+  $("detalhes").innerHTML = "";
+  $("resultado").textContent = "Aguardando leitura...";
+  $("consultar").disabled = true;
+
+  mensagem("Você saiu do sistema.");
+});
+</script>
 </body>
 </html>
