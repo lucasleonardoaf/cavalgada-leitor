@@ -1,0 +1,195 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Leitor de Códigos - Cavalgada</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f3f4f6;
+      margin: 0;
+      padding: 20px;
+      text-align: center;
+      color: #222;
+    }
+
+    .container {
+      max-width: 500px;
+      margin: 20px auto;
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px #0002;
+    }
+
+    h1 {
+      font-size: 23px;
+      color: #245c38;
+    }
+
+    video {
+      width: 100%;
+      border-radius: 10px;
+      background: #111;
+      margin-top: 15px;
+    }
+
+    button {
+      width: 100%;
+      padding: 15px;
+      margin-top: 12px;
+      border: 0;
+      border-radius: 8px;
+      background: #245c38;
+      color: white;
+      font-size: 17px;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    #copiar {
+      background: #2563a6;
+    }
+
+    #resultado {
+      font-size: 24px;
+      font-weight: bold;
+      padding: 15px;
+      background: #e8f5e9;
+      border-radius: 8px;
+      margin-top: 15px;
+      overflow-wrap: anywhere;
+    }
+
+    #mensagem {
+      font-size: 14px;
+      margin-top: 15px;
+      color: #555;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h1>Leitor de Códigos</h1>
+    <p>Cavalgada Amigos da Chácara Mucambo</p>
+
+    <video id="video" autoplay muted playsinline></video>
+
+    <button id="iniciar">Abrir câmera</button>
+    <button id="parar" disabled>Parar câmera</button>
+
+    <h3>Código encontrado:</h3>
+    <div id="resultado">Aguardando leitura...</div>
+
+    <button id="copiar" disabled>Copiar código</button>
+    <button id="novo" disabled>Ler outro código</button>
+
+    <p id="mensagem">
+      Aponte a câmera para o código de barras.
+    </p>
+  </div>
+
+  <script type="module">
+    import {
+      BrowserMultiFormatReader
+    } from "https://esm.sh/@zxing/browser@0.1.5";
+
+    const leitor = new BrowserMultiFormatReader();
+
+    const video = document.getElementById("video");
+    const iniciar = document.getElementById("iniciar");
+    const parar = document.getElementById("parar");
+    const copiar = document.getElementById("copiar");
+    const novo = document.getElementById("novo");
+    const resultado = document.getElementById("resultado");
+    const mensagem = document.getElementById("mensagem");
+
+    let controles = null;
+    let codigoLido = "";
+
+    async function iniciarLeitura() {
+      try {
+        resultado.textContent = "Aguardando leitura...";
+        mensagem.textContent = "Solicitando acesso à câmera...";
+        iniciar.disabled = true;
+        parar.disabled = false;
+        copiar.disabled = true;
+        novo.disabled = true;
+
+        controles = await leitor.decodeFromVideoDevice(
+          undefined,
+          video,
+          (result, error, controls) => {
+            if (result && !codigoLido) {
+              codigoLido = result.getText();
+
+              resultado.textContent = codigoLido;
+              mensagem.textContent = "Código lido com sucesso!";
+              copiar.disabled = false;
+              novo.disabled = false;
+
+              controls.stop();
+              controles = null;
+
+              iniciar.disabled = false;
+              parar.disabled = true;
+            }
+          }
+        );
+
+        mensagem.textContent = "Câmera aberta. Aponte para o código.";
+
+      } catch (erro) {
+        mensagem.textContent =
+          "Não foi possível abrir a câmera: " + erro.message;
+
+        iniciar.disabled = false;
+        parar.disabled = true;
+      }
+    }
+
+    function pararLeitura() {
+      if (controles) {
+        controles.stop();
+        controles = null;
+      }
+
+      iniciar.disabled = false;
+      parar.disabled = true;
+      mensagem.textContent = "Câmera desligada.";
+    }
+
+    iniciar.addEventListener("click", iniciarLeitura);
+
+    parar.addEventListener("click", pararLeitura);
+
+    copiar.addEventListener("click", async () => {
+      if (!codigoLido) return;
+
+      try {
+        await navigator.clipboard.writeText(codigoLido);
+        mensagem.textContent = "Código copiado!";
+      } catch (erro) {
+        mensagem.textContent =
+          "Não foi possível copiar. Selecione o código manualmente.";
+      }
+    });
+
+    novo.addEventListener("click", () => {
+      codigoLido = "";
+      resultado.textContent = "Aguardando leitura...";
+      copiar.disabled = true;
+      novo.disabled = true;
+      iniciarLeitura();
+    });
+  </script>
+</body>
+</html>
